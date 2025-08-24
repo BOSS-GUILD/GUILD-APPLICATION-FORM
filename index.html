@@ -160,6 +160,9 @@
         .social-links {
             margin-top: 30px;
             text-align: center;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
         .social-links a {
@@ -337,7 +340,7 @@
             margin-top: 40px;
             background: rgba(10, 14, 23, 0.8);
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 极速4);
             border-top: 1px solid rgba(255, 62, 0, 0.2);
         }
 
@@ -363,6 +366,11 @@
             
             .logo {
                 font-size: 3rem;
+            }
+            
+            .contact-option {
+                flex-direction: column;
+                gap: 10px;
             }
         }
 
@@ -400,6 +408,17 @@
             margin-bottom: 15px;
         }
 
+        .error-message {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: rgba(200, 0, 0, 0.1);
+            border-radius: 15px;
+            margin-top: 20px;
+            border-left: 4px solid #cc0000;
+            color: #ff6b6b;
+        }
+
         /* Particle background effect */
         .particles {
             position: fixed;
@@ -430,11 +449,110 @@
             width: 200px;
             height: 200px;
             background: radial-gradient(circle, var(--secondary) 0%, transparent 70%);
-            opacity: 0.05;
+            opacity: 极速05;
             border-radius: 50%;
             z-index: -1;
         }
+        
+        .instructions {
+            background: rgba(255, 153, 0, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .instructions h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .firebase-status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .status-connected {
+            background: rgba(0, 200, 0, 0.1);
+            color: #00cc66;
+            border: 1px solid #00cc66;
+        }
+        
+        .status-disconnected {
+            background: rgba(200, 0, 0, 0.1);
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+        }
     </style>
+    
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCo7jqNnRC3ve71JSEPhz5vxUtOUCay-vM",
+            authDomain: "boss-guild-application.firebaseapp.com",
+            projectId: "boss-guild-application",
+            storageBucket: "boss-guild-application.firebasestorage.app",
+            messagingSenderId: "939540989156",
+            appId: "1:939540989156:web:e92569c1a8173a4a33d8f1",
+            measurementId: "G-SLG1TEF5PX"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Set global variable for Firebase functions
+        window.firebaseApp = app;
+        window.firebaseDb = db;
+        
+        // Function to submit application to Firebase
+        window.submitApplication = async function(formData) {
+            try {
+                // Add a new document with a generated id
+                const docRef = await addDoc(collection(db, "applications"), {
+                    uid: formData.uid,
+                    level: formData.level,
+                    experience: formData.experience,
+                    contactMethod: formData.contactMethod,
+                    contact: formData.contact,
+                    screenshot: formData.screenshot,
+                    message: formData.message,
+                    timestamp: new Date()
+                });
+                
+                console.log("Document written with ID: ", docRef.id);
+                return { success: true, id: docRef.id };
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                return { success: false, error: error.message };
+            }
+        };
+        
+        // Update status indicator
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusElement = document.getElementById('firebaseStatus');
+            if (statusElement) {
+                statusElement.textContent = 'Firebase: Connected';
+                statusElement.className = 'firebase-status status-connected';
+            }
+        });
+    </script>
 </head>
 <body>
     <div class="particles" id="particles"></div>
@@ -446,6 +564,7 @@
             </div>
             <h1>BOSS ESP GUILD 2025</h1>
             <p class="subtitle">Join the elite Free Fire fighting force of the future</p>
+            <div id="firebaseStatus" class="firebase-status status-connected">Firebase: Connected</div>
         </header>
 
         <div class="content">
@@ -468,9 +587,22 @@
                 </div>
 
                 <div class="social-links">
-                    <a href="https://www.instagram.com/boss_tarak07?igsh=azc5MWNsYjZmZmw1" target="_blank">
+                    <a href="https://www.instagram.com/boss__esp/?utm_source=ig_web_button_share_sheet" target="_blank">
                         <i class="fab fa-instagram"></i> Follow us on Instagram
                     </a>
+                    <a href="#" id="viewApplicationsBtn">
+                        <i class="fas fa-database"></i> View Applications (Admin)
+                    </a>
+                </div>
+                
+                <div class="instructions">
+                    <h4>How to upload your screenshot:</h4>
+                    <ol>
+                        <li>Take a screenshot of your Free Fire profile</li>
+                        <li>Upload it to <a href="https://imgur.com" target="_blank" style="color: var(--secondary);">Imgur</a> or any image hosting service</li>
+                        <li>Copy the direct image URL</li>
+                        <li>Paste the URL in the screenshot field</li>
+                    </ol>
                 </div>
             </div>
 
@@ -513,13 +645,9 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Upload Profile Screenshot:</label>
-                        <div class="file-upload">
-                            <div class="file-upload-label" id="fileLabel">
-                                <i class="fas fa-cloud-upload-alt"></i> Click or drag to upload screenshot
-                            </div>
-                            <input type="file" class="file-upload-input" id="screenshot" name="screenshot" accept="image/*" required>
-                        </div>
+                        <label for="screenshot">Screenshot URL:</label>
+                        <input type="url" id="screenshot" name="screenshot" required 
+                               placeholder="Paste your profile screenshot URL (from Imgur, etc.)">
                     </div>
 
                     <div class="form-group">
@@ -535,6 +663,12 @@
                         <i class="fas fa-check-circle"></i>
                         <h3>Application Submitted Successfully!</h3>
                         <p>We will review your application and contact you soon.</p>
+                    </div>
+
+                    <div class="error-message" id="errorMessage">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <h3>Submission Failed</h3>
+                        <p id="errorText">Please try again later.</p>
                     </div>
                 </form>
             </div>
@@ -552,13 +686,25 @@
             const form = document.getElementById('guildForm');
             const contactMethodRadios = document.querySelectorAll('input[name="contactMethod"]');
             const contactInfoDiv = document.getElementById('contactInfo');
-            const fileInput = document.getElementById('screenshot');
-            const fileLabel = document.getElementById('fileLabel');
             const spinner = document.getElementById('spinner');
             const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const viewApplicationsBtn = document.getElementById('viewApplicationsBtn');
             
             // Create background particles
             createParticles();
+            
+            // Set up admin panel link
+            viewApplicationsBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const password = prompt('Enter admin password:');
+                if (password === 'admin123') { // You can change this password
+                    window.open('https://console.firebase.google.com/u/0/project/boss-guild-application/firestore', '_blank');
+                } else {
+                    alert('Incorrect password');
+                }
+            });
             
             // Handle contact method change
             contactMethodRadios.forEach(radio => {
@@ -583,45 +729,89 @@
                 }
             }
             
-            // Handle file input change
-            fileInput.addEventListener('change', function() {
-                if (this.files && this.files.length > 0) {
-                    fileLabel.innerHTML = `<i class="fas fa-file-image"></i> ${this.files[0].name}`;
-                }
-            });
-            
             // Handle form submission
-            form.addEventListener('submit', function(e) {
+            form.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
                 // Basic validation
                 const uid = document.getElementById('uid').value;
                 const level = document.getElementById('level').value;
                 const experience = document.getElementById('experience').value;
+                const screenshot = document.getElementById('screenshot').value;
                 
-                if (!uid || !level || !experience) {
-                    alert('Please fill in all required fields');
+                if (!uid || !level || !experience || !screenshot) {
+                    showError('Please fill in all required fields');
                     return;
                 }
                 
+                // Get contact info based on selected method
+                const contactMethod = document.querySelector('input[name="contactMethod"]:checked').value;
+                const contact = contactMethod === 'whatsapp' 
+                    ? document.getElementById('whatsapp').value 
+                    : document.getElementById('instagram').value;
+                
+                if (!contact) {
+                    showError('Please provide your contact information');
+                    return;
+                }
+                
+                const formData = {
+                    uid,
+                    level: parseInt(level),
+                    experience: parseFloat(experience),
+                    contactMethod,
+                    contact,
+                    screenshot,
+                    message: document.getElementById('message').value
+                };
+                
                 // Show loading spinner
                 spinner.style.display = 'block';
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
                 
-                // Simulate form submission to backend
-                setTimeout(() => {
+                try {
+                    // Check if the submitApplication function is available
+                    if (typeof submitApplication !== 'function') {
+                        throw new Error('Firebase not properly configured. Please check the console for errors.');
+                    }
+                    
+                    const result = await submitApplication(formData);
+                    
+                    if (result.success) {
+                        showSuccess();
+                    } else {
+                        showError(result.error || 'Submission failed. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showError('Error: ' + error.message);
+                } finally {
                     spinner.style.display = 'none';
-                    successMessage.style.display = 'block';
-                    form.reset();
-                    fileLabel.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> Click or drag to upload screenshot`;
-                    
-                    // Reset contact field to Instagram
-                    document.querySelector('input[name="contactMethod"][value="instagram"]').checked = true;
-                    updateContactField();
-                    
-                    // Scroll to success message
-                    successMessage.scrollIntoView({ behavior: 'smooth' });
-                }, 2000);
+                }
             });
+            
+            function showSuccess() {
+                successMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+                form.reset();
+                
+                // Reset contact field to Instagram
+                document.querySelector('input[name="contactMethod"][value="instagram"]').checked = true;
+                updateContactField();
+                
+                // Scroll to success message
+                successMessage.scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            function showError(message) {
+                errorText.textContent = message;
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+                
+                // Scroll to error message
+                errorMessage.scrollIntoView({ behavior: 'smooth' });
+            }
             
             // Initialize contact field
             updateContactField();
@@ -659,5 +849,4 @@
         });
     </script>
 </body>
-
 </html>
