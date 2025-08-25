@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOSS ESP - Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #ff3e00;
+            --secondary: #00c4ff;
+            --dark: #0a0e17;
+            --light: #ffffff;
+            --gray: #7b89a8;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0e17 0%, #1a2639 100%);
+            color: var(--light);
+            font-family: 'Exo 2', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 40px;
+            background: rgba(10, 14, 23, 0.8);
+            border-radius: 20px;
+            border-bottom: 3px solid var(--primary);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 60px auto;
+            background: rgba(10, 14, 23, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 12px 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+        }
+
+        .login-form button {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: #000;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .login-form button:hover {
+            transform: translateY(-2px);
+        }
+
+        .app-list {
+            display: grid;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .applicant-card {
+            background: rgba(10, 14, 23, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 62, 0, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .applicant-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .applicant-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--secondary);
+        }
+
+        .image-container {
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .image-container img {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            margin-bottom: 8px;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: var(--gray);
+        }
+
+        .info-value {
+            color: var(--light);
+        }
+
+        .logout {
+            text-align: right;
+            margin: 20px 0;
+        }
+
+        .logout button {
+            background: #7b89a8;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .logout button:hover {
+            background: #6a7a99;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--gray);
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>BOSS ESP GUILD ADMIN PANEL</h1>
+            <p>Secure access to view applications and screenshots</p>
+        </header>
+
+        <!-- Login Screen -->
+        <div id="loginScreen">
+            <div class="login-form">
+                <h2>Admin Login</h2>
+                <input type="password" id="password" placeholder="Enter password" autocomplete="off">
+                <button onclick="login()">Login</button>
+                <p id="error" style="color: #ff3e00; margin-top: 10px; display: none;">Wrong password!</p>
+            </div>
+        </div>
+
+        <!-- Dashboard (hidden until login) -->
+        <div id="dashboard" class="hidden">
+            <div class="logout">
+                <button onclick="logout()">Logout</button>
+            </div>
+            <div id="appList">
+                <div class="loading">Loading applications...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyCo7jqNnRC3ve71JSEPhz5vxUtOUCay-vM",
+        authDomain: "boss-guild-application.firebaseapp.com",
+        projectId: "boss-guild-application",
+        storageBucket: "boss-guild-application.firebasestorage.app",
+        messagingSenderId: "939540989156",
+        appId: "1:939540989156:web:e92569c1a8173a4a33d8f1",
+        measurementId: "G-SLG1TEF5PX"
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      // DOM Elements
+      const loginScreen = document.getElementById('loginScreen');
+      const dashboard = document.getElementById('dashboard');
+      const appList = document.getElementById('appList');
+      const error = document.getElementById('error');
+
+      // Simple password (change this!)
+      const ADMIN_PASSWORD = "bossesp2025";  // ← Change this to your own password
+
+      // Check if already logged in
+      window.onload = () => {
+        if (sessionStorage.getItem('adminLoggedIn')) {
+          showDashboard();
+        }
+      };
+
+      // Login function
+      function login() {
+        const password = document.getElementById('password').value;
+        if (password === ADMIN_PASSWORD) {
+          sessionStorage.setItem('adminLoggedIn', 'true');
+          showDashboard();
+        } else {
+          error.style.display = 'block';
+        }
+      }
+
+      // Logout function
+      function logout() {
+        sessionStorage.removeItem('adminLoggedIn');
+        dashboard.classList.add('hidden');
+        loginScreen.style.display = 'block';
+        document.getElementById('password').value = '';
+        error.style.display = 'none';
+      }
+
+      // Show dashboard and load apps
+      async function showDashboard() {
+        loginScreen.style.display = 'none';
+        dashboard.classList.remove('hidden');
+        await loadApplications();
+      }
+
+      // Load applications from Firestore
+      async function loadApplications() {
+        try {
+          const querySnapshot = await getDocs(collection(db, 'applications'));
+          const apps = [];
+
+          querySnapshot.forEach((doc) => {
+            apps.push({ id: doc.id, ...doc.data() });
+          });
+
+          renderApplications(apps);
+        } catch (error) {
+          console.error("Error fetching applications:", error);
+          appList.innerHTML = `<div class="loading">Error loading applications: ${error.message}</div>`;
+        }
+      }
+
+      // Render applications
+      function renderApplications(apps) {
+        if (apps.length === 0) {
+          appList.innerHTML = `<div class="loading">No applications yet.</div>`;
+          return;
+        }
+
+        let html = '';
+        apps.forEach(app => {
+          html += `
+            <div class="applicant-card">
+              <div class="applicant-header">
+                <div class="applicant-name">UID: ${app.uid}</div>
+              </div>
+              
+              <div class="image-container">
+                ${app.screenshotUrl ? `<img src="${app.screenshotUrl}" alt="Screenshot" onclick="window.open('${app.screenshotUrl}', '_blank')">` : '<p>No screenshot uploaded</p>'}
+              </div>
+
+              <div class="info-grid">
+                <div class="info-item">
+                  <div class="info-label">Level:</div>
+                  <div class="info-value">${app.level}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">Experience:</div>
+                  <div class="info-value">${app.experience} years</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">Contact Method:</div>
+                  <div class="info-value">${app.contactMethod}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">Instagram:</div>
+                  <div class="info-value">${app.instagram || 'Not provided'}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">WhatsApp:</div>
+                  <div class="info-value">${app.whatsapp || 'Not provided'}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">Message:</div>
+                  <div class="info-value">${app.message || 'None'}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">Timestamp:</div>
+                  <div class="info-value">${new Date(app.timestamp).toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+
+        appList.innerHTML = html;
+      }
+    </script>
+</body>
+</html>
