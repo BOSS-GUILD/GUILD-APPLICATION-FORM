@@ -366,7 +366,6 @@
             }
         }
 
-        /* Loading spinner */
         .spinner {
             display: none;
             width: 50px;
@@ -383,7 +382,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Success message */
         .success-message {
             display: none;
             text-align: center;
@@ -400,7 +398,6 @@
             margin-bottom: 15px;
         }
 
-        /* Particle background effect */
         .particles {
             position: fixed;
             top: 0;
@@ -424,7 +421,6 @@
             100% { transform: translateY(-100vh) translateX(100vw); }
         }
 
-        /* Form highlights */
         .form-highlight {
             position: absolute;
             width: 200px;
@@ -547,118 +543,145 @@
         </footer>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('guildForm');
-            const contactMethodRadios = document.querySelectorAll('input[name="contactMethod"]');
-            const contactInfoDiv = document.getElementById('contactInfo');
-            const fileInput = document.getElementById('screenshot');
-            const fileLabel = document.getElementById('fileLabel');
-            const spinner = document.getElementById('spinner');
-            const successMessage = document.getElementById('successMessage');
-            
-            // Create background particles
-            createParticles();
-            
-            // Handle contact method change
-            contactMethodRadios.forEach(radio => {
-                radio.addEventListener('change', function() {
-                    updateContactField();
-                });
-            });
-            
-            function updateContactField() {
-                const selectedMethod = document.querySelector('input[name="contactMethod"]:checked').value;
-                
-                if (selectedMethod === 'whatsapp') {
-                    contactInfoDiv.innerHTML = `
-                        <label for="whatsapp">WhatsApp Number:</label>
-                        <input type="tel" id="whatsapp" name="whatsapp" placeholder="e.g., +1234567890">
-                    `;
-                } else {
-                    contactInfoDiv.innerHTML = `
-                        <label for="instagram">Instagram Username:</label>
-                        <input type="text" id="instagram" name="instagram" placeholder="e.g., @yourusername">
-                    `;
-                }
-            }
-            
-            // Handle file input change
-            fileInput.addEventListener('change', function() {
-                if (this.files && this.files.length > 0) {
-                    fileLabel.innerHTML = `<i class="fas fa-file-image"></i> ${this.files[0].name}`;
-                }
-            });
-            
-            // Handle form submission
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Basic validation
-                const uid = document.getElementById('uid').value;
-                const level = document.getElementById('level').value;
-                const experience = document.getElementById('experience').value;
-                
-                if (!uid || !level || !experience) {
-                    alert('Please fill in all required fields');
-                    return;
-                }
-                
-                // Show loading spinner
-                spinner.style.display = 'block';
-                
-                // Simulate form submission to backend
-                setTimeout(() => {
-                    spinner.style.display = 'none';
-                    successMessage.style.display = 'block';
-                    form.reset();
-                    fileLabel.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> Click or drag to upload screenshot`;
-                    
-                    // Reset contact field to Instagram
-                    document.querySelector('input[name="contactMethod"][value="instagram"]').checked = true;
-                    updateContactField();
-                    
-                    // Scroll to success message
-                    successMessage.scrollIntoView({ behavior: 'smooth' });
-                }, 2000);
-            });
-            
-            // Initialize contact field
-            updateContactField();
-            
-            // Create particles for background
-            function createParticles() {
-                const particlesContainer = document.getElementById('particles');
-                const particleCount = 30;
-                
-                for (let i = 0; i < particleCount; i++) {
-                    const particle = document.createElement('div');
-                    particle.classList.add('particle');
-                    
-                    // Random properties
-                    const size = Math.random() * 10 + 2;
-                    const posX = Math.random() * 100;
-                    const posY = Math.random() * 100;
-                    const delay = Math.random() * 15;
-                    const duration = Math.random() * 20 + 15;
-                    
-                    // Apply styles
-                    particle.style.width = `${size}px`;
-                    particle.style.height = `${size}px`;
-                    particle.style.left = `${posX}vw`;
-                    particle.style.top = `${posY}vh`;
-                    particle.style.animationDelay = `${delay}s`;
-                    particle.style.animationDuration = `${duration}s`;
-                    
-                    // Random color (primary or secondary)
-                    particle.style.background = Math.random() > 0.5 ? 'var(--primary)' : 'var(--secondary)';
-                    
-                    particlesContainer.appendChild(particle);
-                }
-            }
+    <!-- Firebase SDK + Form Handler -->
+    <script type="module">
+      // Import Firebase modules
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyCo7jqNnRC3ve71JSEPhz5vxUtOUCay-vM",
+        authDomain: "boss-guild-application.firebaseapp.com",
+        projectId: "boss-guild-application",
+        storageBucket: "boss-guild-application.firebasestorage.app",
+        messagingSenderId: "939540989156",
+        appId: "1:939540989156:web:e92569c1a8173a4a33d8f1",
+        measurementId: "G-SLG1TEF5PX"
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      // DOM Elements
+      document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('guildForm');
+        const contactMethodRadios = document.querySelectorAll('input[name="contactMethod"]');
+        const contactInfoDiv = document.getElementById('contactInfo');
+        const fileInput = document.getElementById('screenshot');
+        const fileLabel = document.getElementById('fileLabel');
+        const spinner = document.getElementById('spinner');
+        const successMessage = document.getElementById('successMessage');
+
+        // Create background particles
+        createParticles();
+
+        // Handle contact method change
+        contactMethodRadios.forEach(radio => {
+          radio.addEventListener('change', updateContactField);
         });
+
+        function updateContactField() {
+          const selectedMethod = document.querySelector('input[name="contactMethod"]:checked').value;
+          if (selectedMethod === 'whatsapp') {
+            contactInfoDiv.innerHTML = `
+              <label for="whatsapp">WhatsApp Number:</label>
+              <input type="tel" id="whatsapp" name="whatsapp" placeholder="e.g., +1234567890">
+            `;
+          } else {
+            contactInfoDiv.innerHTML = `
+              <label for="instagram">Instagram Username:</label>
+              <input type="text" id="instagram" name="instagram" placeholder="e.g., @yourusername">
+            `;
+          }
+        }
+
+        // Handle file upload label update
+        fileInput.addEventListener('change', () => {
+          if (fileInput.files.length > 0) {
+            fileLabel.innerHTML = `<i class="fas fa-file-image"></i> ${fileInput.files[0].name}`;
+          }
+        });
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+
+          const formData = new FormData(form);
+          const data = {
+            uid: formData.get('uid'),
+            level: formData.get('level'),
+            experience: formData.get('experience'),
+            contactMethod: formData.get('contactMethod'),
+            instagram: formData.get('instagram'),
+            whatsapp: formData.get('whatsapp'),
+            message: formData.get('message'),
+            fileName: fileInput.files[0]?.name || null,
+            timestamp: new Date().toISOString()
+          };
+
+          // Validate required fields
+          if (!data.uid || !data.level || !data.experience) {
+            alert('Please fill all required fields');
+            return;
+          }
+
+          // Show spinner
+          spinner.style.display = 'block';
+
+          try {
+            await addDoc(collection(db, 'applications'), data);
+            
+            // Success
+            spinner.style.display = 'none';
+            successMessage.style.display = 'block';
+            form.reset();
+            fileLabel.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> Click or drag to upload screenshot`;
+
+            // Reset contact method
+            document.querySelector('input[name="contactMethod"][value="instagram"]').checked = true;
+            updateContactField();
+
+            // Scroll to success
+            successMessage.scrollIntoView({ behavior: 'smooth' });
+          } catch (error) {
+            spinner.style.display = 'none';
+            alert('Error: ' + error.message);
+            console.error("Firestore Error:", error);
+          }
+        });
+
+        // Initialize contact field
+        updateContactField();
+
+        // Create floating particles
+        function createParticles() {
+          const particlesContainer = document.getElementById('particles');
+          const particleCount = 30;
+
+          for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+
+            const size = Math.random() * 10 + 2;
+            const posX = Math.random() * 100;
+            const posY = Math.random() * 100;
+            const delay = Math.random() * 15;
+            const duration = Math.random() * 20 + 15;
+
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `${posX}vw`;
+            particle.style.top = `${posY}vh`;
+            particle.style.animationDelay = `${delay}s`;
+            particle.style.animationDuration = `${duration}s`;
+            particle.style.background = Math.random() > 0.5 ? 'var(--primary)' : 'var(--secondary)';
+
+            particlesContainer.appendChild(particle);
+          }
+        }
+      });
     </script>
 </body>
-
-
 </html>
