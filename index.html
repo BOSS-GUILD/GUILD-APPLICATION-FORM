@@ -469,6 +469,14 @@
             color: var(--light);
             word-wrap: break-word;
         }
+        .info-value a {
+            color: var(--secondary);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .info-value a:hover {
+            text-decoration: underline;
+        }
         .admin-tabs {
             display: flex;
             gap: 10px;
@@ -523,14 +531,14 @@
             border-radius: 10px;
             margin-top: 20px;
         }
-        .accepted-controls {
+        .admin-controls {
             display: flex;
             gap: 15px;
             margin-bottom: 20px;
             align-items: center;
             flex-wrap: wrap;
         }
-        #acceptedSearchInput, #sortAcceptedSelect {
+        #acceptedSearchInput, #sortAcceptedSelect, #pendingSearchInput, #sortPendingSelect {
             padding: 10px 15px;
             background: rgba(0,0,0,0.2);
             border: 1px solid var(--gray);
@@ -538,7 +546,7 @@
             color: var(--light);
             font-size: 0.9rem;
         }
-        #acceptedSearchInput {
+        #acceptedSearchInput, #pendingSearchInput {
             flex-grow: 1;
         }
         .btn-export {
@@ -705,12 +713,20 @@
             </div>
             
             <div id="pendingContent" class="admin-tab-content">
+                <div class="admin-controls">
+                    <input type="text" id="pendingSearchInput" placeholder="Search pending by UID...">
+                    <select id="sortPendingSelect">
+                        <option value="recent">Sort by Date (Newest)</option>
+                        <option value="level_high">Sort by Level (Highest)</option>
+                        <option value="level_low">Sort by Level (Lowest)</option>
+                    </select>
+                </div>
                 <div id="pendingList" class="app-list">
                     </div>
             </div>
             
             <div id="acceptedContent" class="admin-tab-content" style="display: none;">
-                <div class="accepted-controls">
+                <div class="admin-controls">
                     <input type="text" id="acceptedSearchInput" placeholder="Search accepted by UID...">
                     <select id="sortAcceptedSelect">
                         <option value="recent">Sort by Date (Default)</option>
@@ -780,10 +796,12 @@
 
         function getContactDetail(app) {
             if (app.contactMethod === 'whatsapp' && app.whatsapp) {
-                return `<strong>Whatsapp:</strong> ${app.whatsapp}`;
+                const phoneNumber = app.whatsapp.replace(/\D/g, '');
+                return `<a href="https://wa.me/${phoneNumber}" target="_blank">${app.whatsapp}</a>`;
             }
             if (app.contactMethod === 'instagram' && app.instagram) {
-                return `<strong>Instagram:</strong> ${app.instagram}`;
+                const username = app.instagram.replace(/@/g, '');
+                return `<a href="https://instagram.com/${username}" target="_blank">${app.instagram}</a>`;
             }
             return 'Not provided';
         }
@@ -797,6 +815,9 @@
                 const acceptedQuery = query(collection(db, 'applications'), where('status', '==', 'accepted'), orderBy('timestamp', 'desc'));
                 const acceptedSnapshot = await getDocs(acceptedQuery);
                 renderApplications(acceptedSnapshot, acceptedList, false);
+                
+                sortAndFilterPending();
+                sortAndFilterAccepted();
 
             } catch (error) {
                 console.error("Error loading applications:", error);
@@ -833,7 +854,7 @@
                 `;
 
                 return `
-                <div class="applicant-card" id="${app.id}" data-ingame-status="${inGameStatus}" data-timestamp="${app.timestamp}">
+                <div class="applicant-card" id="${app.id}" data-ingame-status="${inGameStatus}" data-timestamp="${app.timestamp}" data-level="${app.level}">
                     <div class="info-grid">
                         <div class="info-item"><div class="info-label">UID:</div><div class="info-value">${app.uid || 'N/A'}</div></div>
                         <div class="info-item"><div class="info-label">Game Name:</div><div class="info-value">${app.gameName || 'N/A'}</div></div>
@@ -1038,52 +1059,57 @@
             }
         });
         
-        // NEW: Search and Sort for Accepted Members
         const acceptedSearchInput = document.getElementById('acceptedSearchInput');
         const sortAcceptedSelect = document.getElementById('sortAcceptedSelect');
+        const pendingSearchInput = document.getElementById('pendingSearchInput');
+        const sortPendingSelect = document.getElementById('sortPendingSelect');
 
-        acceptedSearchInput.addEventListener('input', () => {
-            sortAndFilterAccepted();
-        });
-        sortAcceptedSelect.addEventListener('change', () => {
-            sortAndFilterAccepted();
-        });
+        acceptedSearchInput.addEventListener('input', sortAndFilterAccepted);
+        sortAcceptedSelect.addEventListener('change', sortAndFilterAccepted);
+        pendingSearchInput.addEventListener('input', sortAndFilterPending);
+        sortPendingSelect.addEventListener('change', sortAndFilterPending);
 
         function sortAndFilterAccepted() {
             const searchTerm = acceptedSearchInput.value.toLowerCase();
             const sortValue = sortAcceptedSelect.value;
-            
             const cardsNodeList = acceptedList.querySelectorAll('.applicant-card');
+            if (cardsNodeList.length === 0) return;
             let cardsArray = Array.from(cardsNodeList);
 
-            // Sort the array of card elements
             cardsArray.sort((a, b) => {
-                if (sortValue === 'inguild') {
-                    // 'added' comes before 'not_added'
-                    return a.dataset.ingameStatus.localeCompare(b.dataset.ingameStatus) * -1;
-                }
-                if (sortValue === 'notinguild') {
-                    // 'not_added' comes before 'added'
-                    return a.dataset.ingameStatus.localeCompare(b.dataset.ingameStatus);
-                }
-                // Default: sort by most recent timestamp
+                if (sortValue === 'inguild') return a.dataset.ingameStatus.localeCompare(b.dataset.ingameStatus) * -1;
+                if (sortValue === 'notinguild') return a.dataset.ingameStatus.localeCompare(b.dataset.ingameStatus);
                 return b.dataset.timestamp.localeCompare(a.dataset.timestamp);
             });
 
-            // Re-append sorted cards and apply search filter
             cardsArray.forEach(card => {
-                const uidElement = card.querySelector('.info-item:first-child .info-value');
+                const uidElement = card.querySelector('.info-grid .info-item:first-child .info-value');
                 const uid = uidElement ? uidElement.textContent.toLowerCase() : '';
-                
-                if (uid.includes(searchTerm)) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-                acceptedList.appendChild(card); // Re-append to enforce new order
+                card.style.display = uid.includes(searchTerm) ? 'block' : 'none';
+                acceptedList.appendChild(card);
             });
         }
 
+        function sortAndFilterPending() {
+            const searchTerm = pendingSearchInput.value.toLowerCase();
+            const sortValue = sortPendingSelect.value;
+            const cardsNodeList = pendingList.querySelectorAll('.applicant-card');
+            if (cardsNodeList.length === 0) return;
+            let cardsArray = Array.from(cardsNodeList);
+            
+            cardsArray.sort((a, b) => {
+                if (sortValue === 'level_high') return parseInt(b.dataset.level) - parseInt(a.dataset.level);
+                if (sortValue === 'level_low') return parseInt(a.dataset.level) - parseInt(b.dataset.level);
+                return b.dataset.timestamp.localeCompare(a.dataset.timestamp);
+            });
+
+            cardsArray.forEach(card => {
+                const uidElement = card.querySelector('.info-grid .info-item:first-child .info-value');
+                const uid = uidElement ? uidElement.textContent.toLowerCase() : '';
+                card.style.display = uid.includes(searchTerm) ? 'block' : 'none';
+                pendingList.appendChild(card);
+            });
+        }
 
         function createParticles() {
             const container = document.getElementById('particles');
