@@ -469,7 +469,7 @@
                         </ul>
                     </div>
                     <div class="social-links">
-                        <a href="https://www.instagram.com/boss_tarak07?igsh=azc5MWNsYjZmZmw1" target="_blank">
+                        <a href="https://www.instagram.com/boss_tarak07?igsh=azc5MWNsYjZmZmw1" target="_blank" rel="noopener noreferrer">
                             <i class="fab fa-instagram"></i> Follow us on Instagram
                         </a>
                     </div>
@@ -530,7 +530,7 @@
         </div>
     </div>
 
-    <div id="loginPage" class="page-container">
+    <div id="loginPage" class="page-container" style="display: none;">
         <div class="login-form-container">
             <div class="login-form">
                 <h2>Admin Login</h2>
@@ -542,7 +542,7 @@
         </div>
     </div>
 
-    <div id="queryModal" class="page-container">
+    <div id="queryModal" class="page-container" style="display: none;">
         <div class="modal-container">
             <form id="queryForm" class="modal-form">
                 <h2>Suggestions & Queries</h2>
@@ -567,7 +567,7 @@
         </div>
     </div>
 
-    <div id="adminPanel" class="page-container">
+    <div id="adminPanel" class="page-container" style="display: none;">
         <div class="container">
             <header style="margin-bottom: 20px; text-align: center;">
                 <h1>OFFICIAL SECOND BOSS GUILD ADMIN PANEL</h1>
@@ -666,6 +666,10 @@
         
         async function loadAdminData() {
             try {
+                pendingList.innerHTML = `<div class="spinner" style="display:block;"></div>`;
+                acceptedList.innerHTML = `<div class="spinner" style="display:block;"></div>`;
+                queriesList.innerHTML = `<div class="spinner" style="display:block;"></div>`;
+
                 const pendingQuery = query(collection(db, 'applications'), where('status', '==', 'pending'));
                 const pendingSnapshot = await getDocs(pendingQuery);
                 renderApplications(pendingSnapshot, pendingList, true);
@@ -927,12 +931,12 @@
                 const app = doc.data();
                 const contactInfo = app.contactMethod === 'whatsapp' ? app.whatsapp : app.instagram;
                 const row = [
-                    `="${app.uid}"`, // Format as string for spreadsheets
-                    `"${app.gameName.replace(/"/g, '""')}"`,
-                    app.level,
-                    app.experience,
-                    app.contactMethod,
-                    `="${contactInfo}"`, // Format as string
+                    `="${app.uid || ''}"`, 
+                    `"${(app.gameName || '').replace(/"/g, '""')}"`,
+                    app.level || '',
+                    app.experience || '',
+                    app.contactMethod || '',
+                    `="${contactInfo || ''}"`,
                     app.ingame_status === 'added' ? 'Yes' : 'No',
                     `"${(app.ingame_note || '').replace(/"/g, '""')}"`,
                     new Date(app.timestamp).toLocaleString()
@@ -963,7 +967,7 @@
         function getFilteredAndSorted(listElement, searchTerm, sortValue) {
             const cards = Array.from(listElement.getElementsByClassName('applicant-card'));
             let filteredCards = cards.filter(card => {
-                const uid = card.dataset.uid.toLowerCase();
+                const uid = (card.dataset.uid || '').toLowerCase();
                 return uid.includes(searchTerm);
             });
 
@@ -986,17 +990,25 @@
             const sortValue = sortAcceptedSelect.value;
             const sortedCards = getFilteredAndSorted(acceptedList, searchTerm, sortValue);
             
-            Array.from(acceptedList.getElementsByClassName('applicant-card')).forEach(card => card.style.display = 'none');
-            sortedCards.forEach(card => card.style.display = 'block');
+            acceptedList.innerHTML = '';
+            if (sortedCards.length === 0) {
+                acceptedList.innerHTML = `<div class="no-apps-message">No matching applications found.</div>`;
+            } else {
+                sortedCards.forEach(card => acceptedList.appendChild(card));
+            }
         }
 
         function sortAndFilterPending() {
             const searchTerm = pendingSearchInput.value.toLowerCase();
             const sortValue = sortPendingSelect.value;
             const sortedCards = getFilteredAndSorted(pendingList, searchTerm, sortValue);
-
-            Array.from(pendingList.getElementsByClassName('applicant-card')).forEach(card => card.style.display = 'none');
-            sortedCards.forEach(card => card.style.display = 'block');
+            
+            pendingList.innerHTML = '';
+             if (sortedCards.length === 0) {
+                pendingList.innerHTML = `<div class="no-apps-message">No matching applications found.</div>`;
+            } else {
+                sortedCards.forEach(card => pendingList.appendChild(card));
+            }
         }
 
         function createParticles() {
@@ -1044,6 +1056,7 @@
         window.deleteQuery = deleteQuery;
 
         window.onload = function() {
+            showMainPage();
             createParticles();
             updateContactField();
             updateQueryContactField();
